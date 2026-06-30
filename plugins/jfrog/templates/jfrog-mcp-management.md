@@ -45,6 +45,12 @@ STOP — do NOT run the command with guesses.
 
 ## Adding an MCP
 
+**Note — built-in `jfrog`:** the bundled `jfrog` entry
+(`_JF_ARGS=mcp=jfrog-mcp`, bypasses the catalog) is NEVER installed,
+inspected, or edited via this flow. For catalog-managed tool policy
+on JFrog, install the catalog version under a DIFFERENT `mcpServers`
+key (e.g., `jfrog-catalog`) so it coexists with the built-in.
+
 **Did the user name a specific MCP package?** ("add `foo-mcp`",
 "install `@scope/bar`"). If NOT — they said something like "yes",
 "add an MCP", "what can I install" — your FIRST action is to show
@@ -279,6 +285,10 @@ Outcomes:
 
 ## Removing an MCP
 
+**Note — built-in `jfrog`:** removal is uninstalling the JFrog
+plugin from Cursor (Settings → Plugins) ONLY; never delete it from
+the plugin's bundled `mcp.json`.
+
 1. Delete the entry from `mcpServers` in the file it was installed
    in (`.cursor/mcp.json` or `~/.cursor/mcp.json`).
 2. If OAuth was used (Step 5), also remove its entry from
@@ -294,7 +304,7 @@ touching any file or shell:
 
 | User said… | Run |
 | --- | --- |
-| "available", "what can I install", "what's in the catalog", "list MCPs" without other context | **Available to install** below — go straight to `--list-available`; do NOT inspect local files first |
+| "available", "what can I install", "what's in the catalog", "list MCPs", "what MCPs can I use", "which MCP servers can I use" without other context | **Available to install** below — go straight to `--list-available`; do NOT inspect local files first |
 | "installed", "configured", "connected", "running", "what MCPs do I have" | **Currently installed** below |
 | ambiguous / both | run **both** subsections in order: Currently installed first, then Available to install, and present them as separate tables |
 
@@ -315,7 +325,9 @@ elsewhere.
    and whose `args` include `@jfrog/agent-guard`, show: display name
    (the JSON key), package (`mcp=` in `_JF_ARGS`), server
    ID (value after `--server`), scope (project / user).
-3. If a configured entry does not appear in `cursor agent mcp list`,
+3. The bundled `jfrog` entry (`_JF_ARGS=mcp=jfrog-mcp`) is reported
+   with `scope: plugin (jfrog)`, `package: jfrog-mcp (bundled)`.
+4. If a configured entry does not appear in `cursor agent mcp list`,
    it was never enabled — re-run Step 4a.
 
 ### Available to install
@@ -393,6 +405,14 @@ Output is a JSON array; each element has `name`, `packageName`,
   Tools & MCP** — never enabled. Re-run Step 4a
   (`cursor agent mcp enable <name>`); if the entry is brand-new,
   also `Developer: Reload Window` so Cursor picks up the file.
+- **Built-in `jfrog` MCP missing** — almost always either (a)
+  `JFROG_URL` / `JFROG_ACCESS_TOKEN` not exported in the shell that
+  launched Cursor (agent-guard reads them from the shell for the
+  plugin's bundled `jfrog` entry — they MUST NEVER be added to any
+  `mcp.json` `env` block, including the bundled one); fails fast at
+  startup, check the error in Cursor's MCP / Output panel. Or (b) an
+  MDM `deniedMcpServers` entry denying the agent-guard command. Both
+  are environment issues, not plugin issues.
 - **Gateway: `multiple/no JFrog server configured`** (the gateway
   cannot pick a JFrog server) — pass `--server <ID>` (after
   `jf c add <SERVER_ID>`) OR export both `JFROG_URL` and
